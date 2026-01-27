@@ -52,6 +52,12 @@ def main():
         tts_path = final_state.get("tts_audio_path")
         if tts_path:
             console.print(f"[green]TTS audio:[/green] {tts_path}")
+
+        # Music info
+        music_path = final_state.get("music_path")
+        if music_path:
+            from pathlib import Path
+            console.print(f"[green]Music:[/green] {Path(music_path).name}")
     else:
         console.print("[yellow]No post was approved.[/yellow]")
 

@@ -11,6 +11,7 @@ from content_farm.nodes.comment_approval import (
 )
 from content_farm.nodes.tts_generator import generate_tts
 from content_farm.nodes.tts_approval import display_tts, get_tts_approval, should_continue_tts
+from content_farm.nodes.music_picker import pick_music
 
 
 def build_graph() -> StateGraph:
@@ -31,6 +32,9 @@ def build_graph() -> StateGraph:
     graph.add_node("generate_tts", generate_tts)
     graph.add_node("display_tts", display_tts)
     graph.add_node("get_tts_approval", get_tts_approval)
+
+    # Add nodes - Music selection
+    graph.add_node("pick_music", pick_music)
 
     # Set entry point
     graph.set_entry_point("scrape_reddit")
@@ -58,7 +62,7 @@ def build_graph() -> StateGraph:
         should_continue_comments,
         {
             "continue": "display_comment",
-            "done": "generate_tts",  # Proceed to TTS
+            "done": "generate_tts",
             "exhausted": END,
             "post_rejected": "display_post",
         },
@@ -72,12 +76,15 @@ def build_graph() -> StateGraph:
         "get_tts_approval",
         should_continue_tts,
         {
-            "approved": END,  # TODO: Next phase (fetch_music)
-            "rejected": "generate_tts",  # Regenerate
-            "replay": "display_tts",  # Replay audio
+            "approved": "pick_music",  # Proceed to music selection
+            "rejected": "generate_tts",
+            "replay": "display_tts",
             "quit": END,
         },
     )
+
+    # Music selection flow (auto-pick, no approval needed)
+    graph.add_edge("pick_music", END)  # TODO: Next phase (compose_video)
 
     return graph
 

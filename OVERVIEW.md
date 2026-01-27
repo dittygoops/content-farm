@@ -26,6 +26,7 @@ content-farm/
 ├── OVERVIEW.md                 # This file
 ├── .gitignore
 ├── output/                     # Generated audio/video files
+├── music/                      # YouTube Audio Library tracks (user-provided)
 └── src/content_farm/
     ├── __init__.py
     ├── main.py                 # Entry point
@@ -39,7 +40,8 @@ content-farm/
         ├── comment_scraper.py  # Fetches comments from approved post
         ├── comment_approval.py # Comment display + approval UI
         ├── tts_generator.py    # Generates TTS audio with edge-tts
-        └── tts_approval.py     # TTS playback + approval UI
+        ├── tts_approval.py     # TTS playback + approval UI
+        └── music_picker.py     # Random music selection + approval UI
 ```
 
 ## Graph Flow
@@ -256,7 +258,7 @@ python -m content_farm.main
 |-------|-------------|--------|
 | 1 | Content Selection (Reddit + Comments) | ✅ Complete |
 | 2 | TTS Generation | ✅ Complete |
-| 3 | Music Selection | ⬜ Planned |
+| 3 | Music Selection | ✅ Complete |
 | 4 | Video Composition | ⬜ Planned |
 | 5 | Finalization (length check + metadata) | ⬜ Planned |
 | 6 | YouTube Upload | ⬜ Planned |

@@ -37,5 +37,7 @@ class GraphState(TypedDict, total=False):
     tts_audio_path: str  # Path to generated audio file
     tts_voice: str  # Voice used for generation
     tts_approved: bool | None  # None = replay, True = approved, False = rejected
+    # Music selection
+    music_path: str  # Selected music track path
     # Global
     quit: bool  # User requested quit
