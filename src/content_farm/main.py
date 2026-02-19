@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Main entry point for the content farm console app."""
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from rich.console import Console
 
 from content_farm.graph import create_app
@@ -58,6 +61,29 @@ def main():
         if music_path:
             from pathlib import Path
             console.print(f"[green]Music:[/green] {Path(music_path).name}")
+
+        # Video info
+        video_path = final_state.get("video_path")
+        if video_path:
+            duration = final_state.get("video_duration", 0)
+            console.print(f"[green]Video:[/green] {video_path}")
+            console.print(f"[dim]Duration: {duration:.1f}s[/dim]")
+
+        # Metadata info
+        meta_title = final_state.get("meta_title")
+        if meta_title:
+            console.print(f"[green]Title:[/green] {meta_title}")
+            description = final_state.get("meta_description", "")
+            hashtags = final_state.get("meta_hashtags", [])
+            if description:
+                console.print(f"[dim]Description: {description}[/dim]")
+            if hashtags:
+                console.print(f"[dim]Hashtags: {' '.join(hashtags)}[/dim]")
+
+        # Upload info
+        youtube_url = final_state.get("youtube_url")
+        if youtube_url:
+            console.print(f"[green]YouTube URL:[/green] {youtube_url}")
     else:
         console.print("[yellow]No post was approved.[/yellow]")
 

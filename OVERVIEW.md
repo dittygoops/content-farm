@@ -14,8 +14,8 @@ Automated pipeline for creating short-form video content from Reddit posts.
 | Reddit Scraping | Reddit JSON API | No auth needed, append `.json` to URLs |
 | Console UI | Rich | Panels, prompts, colored output |
 | LLM (future) | Groq | Free tier |
-| TTS (future) | edge-tts | Free Microsoft TTS |
-| Video (future) | FFmpeg + moviepy | Free |
+| TTS | edge-tts | Free Microsoft TTS |
+| Video | FFmpeg | Composition with captions |
 | Browser automation (future) | browser-use | For YouTube upload |
 
 ## Project Structure
@@ -27,6 +27,7 @@ content-farm/
 ├── .gitignore
 ├── output/                     # Generated audio/video files
 ├── music/                      # YouTube Audio Library tracks (user-provided)
+├── video/                      # Background videos (subway surfers, etc.)
 └── src/content_farm/
     ├── __init__.py
     ├── main.py                 # Entry point
@@ -41,7 +42,9 @@ content-farm/
         ├── comment_approval.py # Comment display + approval UI
         ├── tts_generator.py    # Generates TTS audio with edge-tts
         ├── tts_approval.py     # TTS playback + approval UI
-        └── music_picker.py     # Random music selection + approval UI
+        ├── music_picker.py     # Random music selection
+        ├── video_composer.py   # FFmpeg video composition
+        └── video_approval.py   # Video preview + approval UI
 ```
 
 ## Graph Flow
@@ -165,61 +168,45 @@ python -m content_farm.main
                                                     │
                                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        PHASE 2: TTS GENERATION                          │
-│                              (Planned)                                  │
+│                   PHASE 2: TTS + MUSIC (Automatic)                      │
+│                              (Complete)                                 │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│                            generate_tts                                 │
-│                                 │                                       │
-│                                 ▼                                       │
-│                            approve_tts                                  │
-│                                 │                                       │
-│                      reject ────┴──── accept                            │
-│                         │                │                              │
-│                         ▲                │                              │
-│                         └────────────────┘                              │
-│                                          │                              │
-└──────────────────────────────────────────┼──────────────────────────────┘
-                                           │
-                                           ▼
+│                  generate_tts ──► pick_music (random from music/)       │
+│                                        │                                │
+│                                        │ (no approval needed)           │
+│                                        │                                │
+└────────────────────────────────────────┼────────────────────────────────┘
+                                         │
+                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        PHASE 3: MUSIC SELECTION                         │
-│                              (Planned)                                  │
+│                        PHASE 3: VIDEO COMPOSITION                       │
+│                              (Complete)                                 │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│                            fetch_music                                  │
+│       compose_video (background + viral captions + TTS + music)         │
+│                                 │                                       │
+│         - 1080x1920 (YouTube Shorts format)                             │
+│         - Per-letter gradient captions with liquid glass effect         │
+│         - Background video from video/ directory                        │
 │                                 │                                       │
 │                                 ▼                                       │
-│                           approve_music                                 │
-│                                 │                                       │
-│                      reject ────┴──── accept                            │
-│                         │                │                              │
-│                         ▲                │                              │
-│                         └────────────────┘                              │
-│                                          │                              │
-└──────────────────────────────────────────┼──────────────────────────────┘
-                                           │
-                                           ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        PHASE 4: VIDEO COMPOSITION                       │
-│                              (Planned)                                  │
-├─────────────────────────────────────────────────────────────────────────┤
+│                   preview_video ──► get_video_approval                  │
+│                        ▲                    │                           │
+│                        │                    ▼                           │
+│                        │           ┌──────────────┐                     │
+│                        │           │ approved ────┼──► END              │
+│                        │           │ rejected     │                     │
+│                        │           │ reopen       │                     │
+│                        │           └──────────────┘                     │
+│                        │                    │                           │
+│                        └────────────────────┘                           │
 │                                                                         │
-│                  compose_video (background + captions + TTS + music)    │
-│                                 │                                       │
-│                                 ▼                                       │
-│                           approve_video                                 │
-│                                 │                                       │
-│                      reject ────┴──── accept                            │
-│                         │                │                              │
-│                         ▲                │                              │
-│                         └────────────────┘                              │
-│                                          │                              │
-└──────────────────────────────────────────┼──────────────────────────────┘
-                                           │
-                                           ▼
+└─────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        PHASE 5: FINALIZATION                            │
+│                        PHASE 4: FINALIZATION                            │
 │                              (Planned)                                  │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
@@ -230,17 +217,12 @@ python -m content_farm.main
 │                                 │                                       │
 │                                 ▼                                       │
 │                  approve_meta (accept / edit inline / reject)           │
-│                                 │                                       │
-│                      reject ────┴──── accept                            │
-│                         │                │                              │
-│                         ▲                │                              │
-│                         └────────────────┘                              │
-│                                          │                              │
-└──────────────────────────────────────────┼──────────────────────────────┘
-                                           │
-                                           ▼
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        PHASE 6: UPLOAD                                  │
+│                        PHASE 5: UPLOAD                                  │
 │                              (Planned)                                  │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
@@ -257,8 +239,7 @@ python -m content_farm.main
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 1 | Content Selection (Reddit + Comments) | ✅ Complete |
-| 2 | TTS Generation | ✅ Complete |
-| 3 | Music Selection | ✅ Complete |
-| 4 | Video Composition | ⬜ Planned |
-| 5 | Finalization (length check + metadata) | ⬜ Planned |
-| 6 | YouTube Upload | ⬜ Planned |
+| 2 | TTS + Music (automatic, no approval) | ✅ Complete |
+| 3 | Video Composition (viral captions) | ✅ Complete |
+| 4 | Finalization (length check + metadata) | ✅ Complete |
+| 5 | YouTube Upload | ✅ Complete |

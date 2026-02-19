@@ -39,5 +39,17 @@ class GraphState(TypedDict, total=False):
     tts_approved: bool | None  # None = replay, True = approved, False = rejected
     # Music selection
     music_path: str  # Selected music track path
+    # Video composition
+    video_path: str  # Output video path
+    video_duration: float  # Duration in seconds
+    video_approved: bool | None  # None = replay, True = approved, False = rejected
+    # Metadata generation
+    meta_title: str          # Generated YouTube title
+    meta_description: str    # Generated description
+    meta_hashtags: list[str] # Generated hashtags
+    meta_approved: bool | None  # None = regenerate, True = approved
+    length_warning: str | None  # Warning if video is out of Shorts bounds
+    # Upload
+    youtube_url: str  # Published video URL
     # Global
     quit: bool  # User requested quit

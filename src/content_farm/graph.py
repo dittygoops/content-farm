@@ -10,8 +10,16 @@ from content_farm.nodes.comment_approval import (
     should_continue_comments,
 )
 from content_farm.nodes.tts_generator import generate_tts
-from content_farm.nodes.tts_approval import display_tts, get_tts_approval, should_continue_tts
 from content_farm.nodes.music_picker import pick_music
+from content_farm.nodes.video_composer import compose_video
+from content_farm.nodes.video_approval import (
+    preview_video,
+    get_video_approval,
+    should_continue_video,
+)
+from content_farm.nodes.meta_generator import verify_length, generate_meta
+from content_farm.nodes.meta_approval import approve_meta, should_continue_meta
+from content_farm.nodes.youtube_uploader import upload_youtube
 
 
 def build_graph() -> StateGraph:
@@ -28,13 +36,24 @@ def build_graph() -> StateGraph:
     graph.add_node("display_comment", display_comment)
     graph.add_node("get_comment_approval", get_comment_approval)
 
-    # Add nodes - TTS generation
+    # Add nodes - TTS generation (no approval, auto-proceeds)
     graph.add_node("generate_tts", generate_tts)
-    graph.add_node("display_tts", display_tts)
-    graph.add_node("get_tts_approval", get_tts_approval)
 
     # Add nodes - Music selection
     graph.add_node("pick_music", pick_music)
+
+    # Add nodes - Video composition
+    graph.add_node("compose_video", compose_video)
+    graph.add_node("preview_video", preview_video)
+    graph.add_node("get_video_approval", get_video_approval)
+
+    # Add nodes - Phase 4: Finalization
+    graph.add_node("verify_length", verify_length)
+    graph.add_node("generate_meta", generate_meta)
+    graph.add_node("approve_meta", approve_meta)
+
+    # Add nodes - Phase 5: Upload
+    graph.add_node("upload_youtube", upload_youtube)
 
     # Set entry point
     graph.set_entry_point("scrape_reddit")
@@ -68,23 +87,45 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # TTS generation flow
-    graph.add_edge("generate_tts", "display_tts")
-    graph.add_edge("display_tts", "get_tts_approval")
+    # TTS generation flow (no approval, auto-proceeds to music)
+    graph.add_edge("generate_tts", "pick_music")
+
+    # Music selection flow (auto-pick, no approval needed)
+    graph.add_edge("pick_music", "compose_video")
+
+    # Video composition flow
+    graph.add_edge("compose_video", "preview_video")
+    graph.add_edge("preview_video", "get_video_approval")
 
     graph.add_conditional_edges(
-        "get_tts_approval",
-        should_continue_tts,
+        "get_video_approval",
+        should_continue_video,
         {
-            "approved": "pick_music",  # Proceed to music selection
-            "rejected": "generate_tts",
-            "replay": "display_tts",
+            "approved": "verify_length",
+            "rejected": "compose_video",
+            "reopen": "preview_video",
+            "no_video": END,
             "quit": END,
         },
     )
 
-    # Music selection flow (auto-pick, no approval needed)
-    graph.add_edge("pick_music", END)  # TODO: Next phase (compose_video)
+    # Finalization flow
+    graph.add_edge("verify_length", "generate_meta")
+    graph.add_edge("generate_meta", "approve_meta")
+
+    graph.add_conditional_edges(
+        "approve_meta",
+        should_continue_meta,
+        {
+            "approved": "upload_youtube",
+            "regenerate": "generate_meta",
+            "edit": "approve_meta",
+            "quit": END,
+        },
+    )
+
+    # Upload flow
+    graph.add_edge("upload_youtube", END)
 
     return graph
 
