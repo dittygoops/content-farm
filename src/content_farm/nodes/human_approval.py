@@ -4,6 +4,7 @@ from rich.prompt import Prompt
 from rich.text import Text
 
 from content_farm.state import GraphState
+from content_farm.utils.seen_posts import mark_seen
 
 console = Console()
 
@@ -61,6 +62,7 @@ def get_approval(state: GraphState) -> GraphState:
 
     if choice == "a":
         console.print("[green]Post approved![/green]")
+        mark_seen(post["id"])
         return {"approved_post": post}
     elif choice == "s":
         new_index = min(index + 5, len(posts))

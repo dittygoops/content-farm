@@ -1,10 +1,14 @@
 import httpx
+from rich.console import Console
 
 from content_farm.filters import should_skip_post
 from content_farm.state import GraphState, RedditPost
+from content_farm.utils.seen_posts import load_seen_ids
 
 REDDIT_BASE_URL = "https://www.reddit.com"
 USER_AGENT = "ContentFarm/0.1 (educational project)"
+
+console = Console()
 
 
 def scrape_subreddit(subreddit: str, limit: int = 25) -> list[RedditPost]:
@@ -54,6 +58,15 @@ def scrape_reddit(state: GraphState) -> GraphState:
             all_posts.extend(posts)
         except Exception as e:
             print(f"Failed to scrape r/{subreddit}: {e}")
+
+    # Filter posts we've already processed in previous runs
+    seen_ids = load_seen_ids()
+    if seen_ids:
+        before = len(all_posts)
+        all_posts = [p for p in all_posts if p["id"] not in seen_ids]
+        skipped = before - len(all_posts)
+        if skipped:
+            console.print(f"[dim]Skipped {skipped} already-seen post(s).[/dim]")
 
     # Sort by score descending
     all_posts.sort(key=lambda p: p["score"], reverse=True)
