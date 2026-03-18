@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.2.5] - 2026-03-18
+
+### Changed!
+- Updated `CHANGELOG.md` for testing tamago !
+- Really big update! Optimized entire alg by 15%
+
 ## [0.2.4] - 2026-03-16
 
 ### Changed!
